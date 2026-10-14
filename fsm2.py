@@ -1,4 +1,9 @@
-"""FSM simulating network server, loosely based on the state design pattern"""
+"""FSM simulating network server, loosely based on the state design pattern
+
+One class hierarchy that updates the current __class__ attribute at the root
+based on current state
+"""
+
 
 class Connection:
 
@@ -29,6 +34,7 @@ class Connection:
     def _default(self):
         self._new_state(Errored)
 
+
 class Listening(Connection):
     def error(self):
         pass
@@ -44,6 +50,7 @@ class Open(Connection):
     def close(self):
         self._new_state(Closed)
 
+
 class Accepted(Connection):
     def close(self):
         self._new_state(Closed)
@@ -56,6 +63,7 @@ class Accepted(Connection):
         self._new_state(Reading)
         self.read()
 
+
 class Writing(Connection):
     def write(self):
         print("writing..")
@@ -67,9 +75,10 @@ class Writing(Connection):
     def close(self):
         self._new_state(Closed)
 
+
 class Reading(Connection):
     def read(self):
-        print('reading...')
+        print("reading...")
 
     def write(self):
         self._new_state(Writing)
@@ -78,9 +87,11 @@ class Reading(Connection):
     def close(self):
         self._new_state(Closed)
 
+
 class Closed(Connection):
     def _default(self):
         self._new_state(Listening)
+
 
 class Errored(Connection):
     pass
