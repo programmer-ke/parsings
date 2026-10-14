@@ -1,7 +1,7 @@
-import fsm_state_design_pattern
+import fsm2
 
 def test_basic_connection():
-    state = fsm_state_design_pattern.Connection()
+    state = fsm2.Connection()
     script = ["connect", "accept", "read", "write", "close", "connect"]
 
     for event in script:
