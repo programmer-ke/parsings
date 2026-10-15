@@ -17,12 +17,18 @@ class Scanner:
         self._token_spec = [(re.compile(pattern), name) for pattern, name in token_spec]
         self._matched_tokens = []
 
+    def has_tokens(self):
+        return len(self._matched_tokens) > 0
+
     def scan(self, text: list[str]) -> None:
         """Parses text into a list of tokens"""
 
         for line in text:
             start_index = 0
             while start_index < len(line):
+                if line[start_index].isspace():
+                    start_index += 1
+                    continue
                 token = self._get_next_match(line, start_index)
                 if not token:
                     raise SyntaxError(f"No token matched: {line[start_index:]}")
