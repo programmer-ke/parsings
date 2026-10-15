@@ -8,7 +8,7 @@ import re
 class Token:
     name: str
     matched_text: str
-    line_index: int
+    end_column: int
     length: int
 
 
@@ -32,20 +32,26 @@ class Scanner:
     def _get_next_match(self, line: str, start_index: int) -> Token | None:
         """Returns the next matched token from line"""
 
+        segment = line[start_index:]
+
         for pattern, token_name in self._token_spec:
-            segment = line[start_index:]
             if possible_match := pattern.match(segment):
                 match_end = possible_match.end()
                 return Token(
                     name=token_name,
                     matched_text=segment[:match_end],
-                    line_index=start_index + match_end,
+                    end_column=start_index + match_end,
                     length=match_end,
                 )
 
     def match(self, token_types):
         """Consumes and returns first token if in token_types"""
-        ...
+        if not self._matched_tokens or not token_types:
+            return None
+
+        if self._matched_tokens[0].name in token_types:
+            return self._matched_tokens.pop(0)
+        return None
 
     def peek(self, token_types=None):
         """Returns first token without consuming it
@@ -64,4 +70,6 @@ class Scanner:
 
     def push(self, token):
         """Pushes a token back to the head of the token stream"""
-        ...
+
+        if token:
+            self._matched_tokens.insert(0, token)

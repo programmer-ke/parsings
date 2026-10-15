@@ -75,7 +75,20 @@ def test_scanning_success():
     first = scanner.peek(["LPAREN"])
     assert first is None
 
-    # test match
+    # test match, returns None with non-matching token
+    token = scanner.match(["LPAREN"])
+    assert token is None
+
+    # test match with matching token
+    token = scanner.match(["LPAREN", "DEF"])
+    assert token.name == "DEF"
+
+    # should have advanced
+    assert scanner.peek().name == "INDENT"
+
+    # test push back token
+    scanner.push(token)
+    assert scanner.peek().name == "DEF"
 
 
 def test_scanning_failure():
