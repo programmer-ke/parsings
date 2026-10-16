@@ -216,7 +216,7 @@ class PyParser:
         head, following = self.match(["INTEGER", "NAME"]), self.scanner.peek()
         # If integer: options are integer/addition
         if head.name == "INTEGER":
-            if following.name == "PLUS":
+            if following and following.name == "PLUS":
                 # body is calculated expression
                 self.scanner.push(head)
                 body = self.expression()
@@ -224,11 +224,11 @@ class PyParser:
                 # body is a single integer expression
                 body = Integer(head)
         elif head.name == "NAME":
-            if following.name == "PLUS":
+            if following and following.name == "PLUS":
                 # body is calculated expression
                 self.scanner.push(head)
                 body = self.expression()
-            elif following.name == "LPAREN":
+            elif following and following.name == "LPAREN":
                 # body is funcall
                 self.scanner.push(head)
                 body = self.function_call()
