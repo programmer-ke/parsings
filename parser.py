@@ -222,7 +222,7 @@ class PyParser:
                 body = self.expression()
             else:
                 # body is a single integer expression
-                body = head
+                body = Integer(head)
         elif head.name == "NAME":
             if following.name == "PLUS":
                 # body is calculated expression
@@ -234,7 +234,7 @@ class PyParser:
                 body = self.function_call()
             else:
                 # body is named expression
-                body = head
+                body = Name(head)
         else:
             # unrecogized body
             raise SyntaxError(
