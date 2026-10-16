@@ -5,7 +5,7 @@ import re
 
 
 TOKEN_SPEC = [
-    (r"^def", "DEF"),
+    (r"^def\b", "DEF"),
     (r"^[a-zA-Z_][a-zA-Z0-9_]*", "NAME"),
     (r"^[0-9]+", "INTEGER"),
     (r"^\(", "LPAREN"),
