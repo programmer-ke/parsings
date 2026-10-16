@@ -49,32 +49,32 @@ class Expression(Production):
 
 @dataclass
 class Name(Expression):
-    name: Token
+    token: Token
 
     def analyze(self, world: World):
-        print(f"analyzing: {type(self).__name__}:{self.name}")
-        world.variables[self.name.matched_text] = None
+        print(f"analyzing: {type(self).__name__}:{self.token}")
+        world.variables[self.token.matched_text] = None
 
 
 @dataclass
 class Integer(Expression):
-    integer: Token
+    token: Token
     value: int | None = None
 
     def analyze(self, world: World):
-        print(f"analyzing: {type(self).__name__}:{self.integer}")
-        self.value = int(self.integer.matched_text)
+        print(f"analyzing: {type(self).__name__}:{self.token}")
+        self.value = int(self.token.matched_text)
 
 
 @dataclass
 class FunctionDefinition(Production):
-    name: Token
+    token: Token
     params: list[Expression]
     body: "FunctionBody"
 
     def analyze(self, world: World):
-        print(f"analyzing: {type(self).__name__}:{self.name}")
-        world.functions[self.name.matched_text] = self
+        print(f"analyzing: {type(self).__name__}:{self.token}")
+        world.functions[self.token.matched_text] = self
         for p in self.params:
             p.analyze(world)
         self.body.analyze(world)
@@ -82,17 +82,17 @@ class FunctionDefinition(Production):
 
 @dataclass
 class FunctionCall(Production):
-    name: Token
+    token: Token
     params: list[Expression]
     function_ref: FunctionDefinition | None = None
 
     def analyze(self, world: World):
-        print(f"analyzing: {type(self).__name__}:{self.name}")
-        funcname = self.name.matched_text
+        print(f"analyzing: {type(self).__name__}:{self.token}")
+        funcname = self.token.matched_text
         try:
             self.function_ref = world.functions[funcname]
         except KeyError as exc:
-            raise NameError(f"Function {self.name.matched_text} not found") from exc
+            raise NameError(f"Function {self.token.matched_text} not found") from exc
         for p in self.params:
             p.analyze(world)
 
