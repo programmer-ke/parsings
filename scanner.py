@@ -4,6 +4,18 @@ from dataclasses import dataclass
 import re
 
 
+TOKEN_SPEC = [
+    (r"^def", "DEF"),
+    (r"^[a-zA-Z_][a-zA-Z0-9_]*", "NAME"),
+    (r"^[0-9]+", "INTEGER"),
+    (r"^\(", "LPAREN"),
+    (r"^\)", "RPAREN"),
+    (r"^\+", "PLUS"),
+    (r"^:", "COLON"),
+    (r"^,", "COMMA"),
+]
+
+
 @dataclass
 class Token:
     name: str
@@ -49,6 +61,7 @@ class Scanner:
                     end_column=start_index + match_end,
                     length=match_end,
                 )
+        return None
 
     def match(self, token_types):
         """Consumes and returns first token if in token_types"""

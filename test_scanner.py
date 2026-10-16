@@ -11,7 +11,6 @@ TOKEN_SPEC = [
     (r"^\+", "PLUS"),
     (r"^:", "COLON"),
     (r"^,", "COMMA"),
-    (r"^\s+", "INDENT"),
 ]
 
 
@@ -31,29 +30,23 @@ def test_scanning_success():
 
     expected_output = [
         ("DEF", "def", 3, 3),
-        ("INDENT", " ", 4, 1),
         ("NAME", "hello", 9, 5),
         ("LPAREN", "(", 10, 1),
         ("NAME", "x", 11, 1),
         ("COMMA", ",", 12, 1),
-        ("INDENT", " ", 13, 1),
         ("NAME", "y", 14, 1),
         ("RPAREN", ")", 15, 1),
         ("COLON", ":", 16, 1),
-        ("INDENT", "    ", 4, 4),
         ("NAME", "print", 9, 5),
         ("LPAREN", "(", 10, 1),
         ("NAME", "x", 11, 1),
-        ("INDENT", " ", 12, 1),
         ("PLUS", "+", 13, 1),
-        ("INDENT", " ", 14, 1),
         ("NAME", "y", 15, 1),
         ("RPAREN", ")", 16, 1),
         ("NAME", "hello", 5, 5),
         ("LPAREN", "(", 6, 1),
         ("INTEGER", "10", 8, 2),
         ("COMMA", ",", 9, 1),
-        ("INDENT", " ", 10, 1),
         ("INTEGER", "20", 12, 2),
         ("RPAREN", ")", 13, 1),
     ]
@@ -84,7 +77,7 @@ def test_scanning_success():
     assert token.name == "DEF"
 
     # should have advanced
-    assert scanner.peek().name == "INDENT"
+    assert scanner.peek().name == "NAME"
 
     # test push back token
     scanner.push(token)

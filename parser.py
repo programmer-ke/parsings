@@ -17,36 +17,104 @@ addition -> expression PLUS expression
 body -> funcall / expression
 """
 
+import abc
 from dataclasses import dataclass
 from scanner import Token
 from pprint import pprint
 from typing import Union
+from collections import ChainMap
 
-Expression = Union[Token, "Addition"]
+
+class World:
+    def __init__(self, builtins=None):
+        if builtins is None:
+            builtins = {}
+        self.functions = ChainMap({}, builtins)
+        self.variables = {}
+
+    def __repr__(self):
+        return f"functions: {self.functions}, variables: {self.variables}"
+
+
+class Production(abc.ABC):
+
+    @abc.abstractmethod
+    def analyze(self, world: World):
+        pass
+
+
+class Expression(Production):
+    pass
 
 
 @dataclass
-class FunctionDefinition:
+class Name(Expression):
+    name: Token
+
+    def analyze(self, world: World):
+        print(f"analyzing: {type(self).__name__}:{self.name}")
+        world.variables[self.name.matched_text] = None
+
+
+@dataclass
+class Integer(Expression):
+    integer: Token
+    value: int | None = None
+
+    def analyze(self, world: World):
+        print(f"analyzing: {type(self).__name__}:{self.integer}")
+        self.value = int(self.integer.matched_text)
+
+
+@dataclass
+class FunctionDefinition(Production):
     name: Token
     params: list[Expression]
     body: "FunctionBody"
 
+    def analyze(self, world: World):
+        print(f"analyzing: {type(self).__name__}:{self.name}")
+        world.functions[self.name.matched_text] = self
+        for p in self.params:
+            p.analyze(world)
+        self.body.analyze(world)
+
 
 @dataclass
-class FunctionCall:
+class FunctionCall(Production):
     name: Token
     params: list[Expression]
+    function_ref: FunctionDefinition | None = None
+
+    def analyze(self, world: World):
+        print(f"analyzing: {type(self).__name__}:{self.name}")
+        funcname = self.name.matched_text
+        try:
+            self.function_ref = world.functions[funcname]
+        except KeyError as exc:
+            raise NameError(f"Function {self.name.matched_text} not found") from exc
+        for p in self.params:
+            p.analyze(world)
 
 
 @dataclass
-class Addition:
+class Addition(Expression):
     left: Expression
     right: Expression
 
+    def analyze(self, world: World):
+        print(f"analyzing: {type(self).__name__}")
+        self.left.analyze(world)
+        self.right.analyze(world)
+
 
 @dataclass
-class FunctionBody:
+class FunctionBody(Production):
     body: FunctionCall | Expression
+
+    def analyze(self, world: World):
+        print(f"analyzing: {type(self).__name__}")
+        self.body.analyze(world)
 
 
 class PyParser:
@@ -120,14 +188,15 @@ class PyParser:
         nxt = self.scanner.peek()
         match nxt.name:
             case "NAME":
-                name = self.match(["NAME"])
+                name = Name(self.match(["NAME"]))
                 nxt = self.scanner.peek()
                 if nxt.name == "PLUS":
                     return self.addition(name)
                 else:
                     return name
+
             case "INTEGER":
-                integer = self.match(["INTEGER"])
+                integer = Integer(self.match(["INTEGER"]))
                 nxt = self.scanner.peek()
                 if nxt.name == "PLUS":
                     return self.addition(integer)
