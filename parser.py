@@ -30,7 +30,8 @@ class World:
         if builtins is None:
             builtins = {}
         self.functions = ChainMap({}, builtins)
-        self.variables = {}
+        self.variables = ChainMap()
+        self.call_stack = []
 
     def __repr__(self):
         return f"functions: {self.functions}, variables: {self.variables}"
@@ -42,6 +43,10 @@ class Production(abc.ABC):
     def analyze(self, world: World):
         pass
 
+    @abc.abstractmethod
+    def interpret(self, world: World):
+        pass
+
 
 class Expression(Production):
     pass
@@ -50,10 +55,13 @@ class Expression(Production):
 @dataclass
 class Name(Expression):
     token: Token
+    value: str | None = None
 
     def analyze(self, world: World):
-        print(f"analyzing: {type(self).__name__}:{self.token}")
-        world.variables[self.token.matched_text] = None
+        self.value = self.token.matched_text
+
+    def interpret(self, world: World):
+        return world.variables[self.value]
 
 
 @dataclass
@@ -62,8 +70,25 @@ class Integer(Expression):
     value: int | None = None
 
     def analyze(self, world: World):
-        print(f"analyzing: {type(self).__name__}:{self.token}")
         self.value = int(self.token.matched_text)
+
+    def interpret(self, world: World):
+        return self.value
+
+
+@dataclass
+class Addition(Expression):
+    left: Expression
+    right: Expression
+
+    def analyze(self, world: World):
+        self.left.analyze(world)
+        self.right.analyze(world)
+
+    def interpret(self, world: World):
+        left_value = self.left.interpret(world)
+        right_value = self.right.interpret(world)
+        return left_value + right_value
 
 
 @dataclass
@@ -73,39 +98,53 @@ class FunctionDefinition(Production):
     body: "FunctionBody"
 
     def analyze(self, world: World):
-        print(f"analyzing: {type(self).__name__}:{self.token}")
+        """Set lookup table reference to user defined function"""
         world.functions[self.token.matched_text] = self
         for p in self.params:
             p.analyze(world)
         self.body.analyze(world)
 
+    def interpret(self, world: World):
+        """Execute body with bound function parameters"""
+        evaluated_arguments = world.call_stack[-1]
+        local_scope = {
+            param.value: argument
+            for param, argument in zip(self.params, evaluated_arguments)
+        }
+        world.variables = world.variables.new_child(local_scope)
+        result = self.body.interpret(world)
+        world.variables = world.variables.parents
+        return result
+
 
 @dataclass
 class FunctionCall(Production):
     token: Token
-    params: list[Expression]
+    arguments: list[Expression]
     function_ref: FunctionDefinition | None = None
 
     def analyze(self, world: World):
-        print(f"analyzing: {type(self).__name__}:{self.token}")
+        """Get reference to function from symbol table"""
         funcname = self.token.matched_text
         try:
             self.function_ref = world.functions[funcname]
         except KeyError as exc:
             raise NameError(f"Function {self.token.matched_text} not found") from exc
-        for p in self.params:
+        for p in self.arguments:
             p.analyze(world)
 
-
-@dataclass
-class Addition(Expression):
-    left: Expression
-    right: Expression
-
-    def analyze(self, world: World):
-        print(f"analyzing: {type(self).__name__}")
-        self.left.analyze(world)
-        self.right.analyze(world)
+    def interpret(self, world: World):
+        """Call referenced function with provided arguments"""
+        arguments = [p.interpret(world) for p in self.arguments]
+        if hasattr(self.function_ref, "interpret"):
+            # user defined
+            world.call_stack.append(arguments)
+            result = self.function_ref.interpret(world)
+            world.call_stack.pop()
+        else:
+            # builtin
+            result = self.function_ref(*arguments)
+        return result
 
 
 @dataclass
@@ -113,8 +152,10 @@ class FunctionBody(Production):
     body: FunctionCall | Expression
 
     def analyze(self, world: World):
-        print(f"analyzing: {type(self).__name__}")
         self.body.analyze(world)
+
+    def interpret(self, world: World):
+        return self.body.interpret(world)
 
 
 class PyParser:
