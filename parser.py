@@ -130,6 +130,15 @@ class FunctionCall(Production):
             self.function_ref = world.functions[funcname]
         except KeyError as exc:
             raise NameError(f"Function {self.token.matched_text} not found") from exc
+
+        if isinstance(self.function_ref, FunctionDefinition) and len(
+            self.arguments
+        ) != len(self.function_ref.params):
+            # unexpected number of params
+            num_params, num_args = len(self.function_ref.params), len(self.arguments)
+            raise TypeError(
+                f"Function {funcname} expects {num_params} arguments, got {num_args}"
+            )
         for p in self.arguments:
             p.analyze(world)
 
