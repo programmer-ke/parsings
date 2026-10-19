@@ -92,3 +92,27 @@ def test_user_function_call_with_result():
     interpreter = Interpreter(symbol_table, parser.structure)
     result = interpreter.interpret()
     print("interpreter result", result)
+
+
+def test_scope_handling():
+    scanner = Scanner(TOKEN_SPEC)
+    code = [
+        "def g(y):",
+        "    x + y",
+        "def f(x):",
+        "    g(1)" "f(5)",
+    ]
+    scanner.scan(code)
+    parser = PyParser(scanner)
+    parser.parse()
+
+    parser.show()
+
+    # prepare builtins
+    builtins = {"print": print}
+    symbol_table = World(builtins)
+    analyzer = Analyzer(symbol_table, parser.structure)
+    analyzer.analyze()
+    interpreter = Interpreter(symbol_table, parser.structure)
+    with pytest.raises(NameError):
+        result = interpreter.interpret()

@@ -61,7 +61,10 @@ class Name(Expression):
         self.value = self.token.matched_text
 
     def interpret(self, world: World):
-        return world.variables[self.value]
+        try:
+            return world.variables[self.value]
+        except KeyError as exc:
+            raise NameError(f"Undefined variable {self.value}") from exc
 
 
 @dataclass
@@ -107,14 +110,18 @@ class FunctionDefinition(Production):
     def interpret(self, world: World):
         """Execute body with bound function parameters"""
         evaluated_arguments = world.call_stack[-1]
+        caller_scope = world.variables
         local_scope = {
             param.value: argument
             for param, argument in zip(self.params, evaluated_arguments)
         }
-        world.variables = world.variables.new_child(local_scope)
-        result = self.body.interpret(world)
-        world.variables = world.variables.parents
-        return result
+        global_scope = world.variables.maps[-1]
+        callee_scope = ChainMap(local_scope, global_scope)
+        world.variables = callee_scope
+        try:
+            return self.body.interpret(world)
+        finally:
+            world.variables = caller_scope
 
 
 @dataclass
