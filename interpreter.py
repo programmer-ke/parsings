@@ -7,6 +7,7 @@ class Interpreter:
         self._script = script
 
     def interpret(self):
+        result = None
         for node in self._script:
             if not isinstance(node, FunctionDefinition):
                 # function definitions will be interpreted via function calls
