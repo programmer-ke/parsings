@@ -155,8 +155,10 @@ class FunctionCall(Production):
         if hasattr(self.function_ref, "interpret"):
             # user defined
             world.call_stack.append(arguments)
-            result = self.function_ref.interpret(world)
-            world.call_stack.pop()
+            try:
+                result = self.function_ref.interpret(world)
+            finally:
+                world.call_stack.pop()
         else:
             # builtin
             result = self.function_ref(*arguments)
