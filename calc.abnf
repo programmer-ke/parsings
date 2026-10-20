@@ -1,0 +1,7 @@
+number = *1sign 1*DIGIT                      ; optional sign followed by 1 or more digits
+sign = "+" / "-"                             ; addition or subtraction
+expr = term *(("+" / "-") term)              ; addition or subtraction terms
+term = factor *(("*" / "/") factor)          ; multiplication or division factors
+factor = number / variable / "(" expr ")"    ; number, variable or bracketed expression
+assignment = variable "=" expr               ; assigning an expression to a variable
+variable = 1*ALPHA *(ALPHA / DIGIT / "_" )   ; a variable name (starts with alphabetic character)
