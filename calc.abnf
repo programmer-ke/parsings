@@ -1,6 +1,7 @@
 program = assignment / expr                                 ; a program is either an expression or assignment
 assignment = variable "=" expr                              ; assigning an expression to a variable
-expr = term *(("+" / "-") term)                             ; addition or subtraction terms
+expr = term expr_rhs                                        ; a left term and an expr right hand side
+expr_rhs = *(("+" / "-") term)                              ; zero or more rhs terms for + and -
 term = unary *(("*" / "/") unary)                           ; multiplication or division factors
 unary = [ "-" / "+" ] factor                                ; unary op on factor
 factor = float / integer / variable / "(" expr ")"          ; number, variable or bracketed expression

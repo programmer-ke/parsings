@@ -49,7 +49,7 @@ class Node(abc.ABC):
 
 
 @dataclass
-class Number(Node):
+class Integer(Node):
     token: Token
     value: int | None = None
 
@@ -58,6 +58,19 @@ class Number(Node):
 
     def interpret(self, world):
         return self.value
+
+
+@dataclass
+class Addition(Node):
+    left: Node
+    right: Node
+
+    def analyze(self, world):
+        self.left.analyze(world)
+        self.right.analyze(world)
+
+    def interpret(self, world):
+        return self.left.interpret(world) + self.right.interpret(world)
 
 
 def tokens(text, line_index):
@@ -90,12 +103,43 @@ class Calculator:
         self._current_token, self._next_token = None, None
         self._advance()
         self._tree = self.program()
+        import pprint
+
+        pprint.pprint(self._tree)
         self._tree.analyze(self._world)
         return self._tree.interpret(self._world)
 
     def program(self):
-        self._expect("NUMBER")
-        return Number(self._current_token)
+        """program = assignment / expr"""
+        self._advance()
+        if self._next_token and self._next_token.type == "ASSIGN":
+            return self.assignment()
+        return self.expr()
+
+    def expr(self):
+        """expr = term expr_rhs"""
+        left = self.term()
+        return self.expr_rhs(left)
+
+    def expr_rhs(self, left):
+        """expr_rhs = *(("+" / "-") term)"""
+        current_type = self._current_token.type if self._current_token else None
+        if current_type not in ["PLUS", "MINUS"]:
+            return left
+
+        self._advance()
+        right = self.term()
+        if current_type == "PLUS":
+            op = Addition(left, right)
+        else:
+            op = Subtraction(left, right)
+        return self.expr_rhs(op)
+
+    def term(self):
+        """term = unary *(("*" / "/") unary)"""
+        term = Integer(self._current_token)
+        self._advance()
+        return term
 
     def _advance(self):
         self._current_token, self._next_token = self._next_token, next(
