@@ -1,0 +1,88 @@
+import re
+import abc
+from collections import namedtuple
+from dataclasses import dataclass
+
+NUM = r"(?P<NUMBER>\d+)"
+WHITESPACE = r"(?P<WHITESPACE>\s+)"
+MISMATCH = r"(?P<MISMATCH>.+)"
+
+Token = namedtuple("Token", "type value lineno column")
+
+master_pattern = re.compile("|".join([NUM, WHITESPACE, MISMATCH]))
+
+
+class Node(abc.ABC):
+    @abc.abstractmethod
+    def analyze(self, world):
+        pass
+
+    @abc.abstractmethod
+    def interpret(self, world):
+        pass
+
+
+@dataclass
+class Number(Node):
+    token: Token
+    value: int | None = None
+
+    def analyze(self, world):
+        self.value = int(self.token.value)
+
+    def interpret(self, world):
+        return self.value
+
+
+def tokens(text, line_index):
+    """Generates tokens on demand"""
+    for m in master_pattern.finditer(text):
+        if m.lastgroup == "MISMATCH":
+            raise SyntaxError(
+                f"Unrecognized token {m.group()} line {line_index + 1}, column {m.start() + 1}"
+            )
+        if not m.lastgroup == "WHITESPACE":
+            yield Token(m.lastgroup, m.group(), line_index + 1, m.start() + 1)
+
+
+class Calculator:
+    def __init__(self, code):
+        self._current_token, self._next_token = None, None
+        self._code = code
+        self._linecount = 0
+        self._tokens = None
+        self._world = {}
+
+    def execute(self):
+        for line in self._code:
+            yield self.eval(line)
+            self._linecount += 1
+
+    def eval(self, line):
+        """Evaluate program"""
+        self._tokens = tokens(line, self._linecount)
+        self._current_token, self._next_token = None, None
+        self._advance()
+        self._tree = self.program()
+        self._tree.analyze(self._world)
+        return self._tree.interpret(self._world)
+
+    def program(self):
+        self._expect("NUMBER")
+        return Number(self._current_token)
+
+    def _advance(self):
+        self._current_token, self._next_token = self._next_token, next(
+            self._tokens, None
+        )
+
+    def _accept(self, token_type):
+        if self._next_token.type == token_type:
+            self._advance()
+            return True
+
+    def _expect(self, token_type):
+        if not self._accept(token_type):
+            raise SyntaxError(
+                f"Expected token {token_type}, found {self._next_token.type}"
+            )

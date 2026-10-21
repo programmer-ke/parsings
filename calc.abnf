@@ -5,3 +5,4 @@ term = factor *(("*" / "/") factor)          ; multiplication or division factor
 factor = number / variable / "(" expr ")"    ; number, variable or bracketed expression
 assignment = variable "=" expr               ; assigning an expression to a variable
 variable = 1*ALPHA *(ALPHA / DIGIT / "_" )   ; a variable name (starts with alphabetic character)
+program = expr / assignment                  ; a program is either an expression or assignment
