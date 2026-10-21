@@ -3,13 +3,39 @@ import abc
 from collections import namedtuple
 from dataclasses import dataclass
 
-NUM = r"(?P<NUMBER>\d+)"
+ASSIGN = r"(?P<ASSIGN>=)"
+VARIABLE = r"(?P<VARIABLE>[a-zA-Z]+\w*)"
+FLOAT = r"(?P<FLOAT>\d+\.\d*|\d*\.\d+)"
+INTEGER = r"(?P<INTEGER>\d+)"
 WHITESPACE = r"(?P<WHITESPACE>\s+)"
+LPAREN = r"(?P<LPAREN>\()"
+RPAREN = r"(?P<RPAREN>\))"
+PLUS = r"(?P<PLUS>\+)"
+MINUS = r"(?P<MINUS>-)"
+MULTIPLY = r"(?P<MULTIPLY>\*)"
+DIVIDE = r"(?P<DIVIDE>/)"
 MISMATCH = r"(?P<MISMATCH>.+)"
 
 Token = namedtuple("Token", "type value lineno column")
 
-master_pattern = re.compile("|".join([NUM, WHITESPACE, MISMATCH]))
+master_pattern = re.compile(
+    "|".join(
+        [
+            FLOAT,
+            INTEGER,
+            WHITESPACE,
+            LPAREN,
+            RPAREN,
+            VARIABLE,
+            PLUS,
+            MULTIPLY,
+            DIVIDE,
+            MINUS,
+            ASSIGN,
+            MISMATCH,
+        ]
+    )
+)
 
 
 class Node(abc.ABC):

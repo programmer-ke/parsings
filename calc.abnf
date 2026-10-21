@@ -1,9 +1,9 @@
-float = ( *DIGIT "." 1*DIGIT / 1*DIGIT "." *DIGIT )         ; float spec
-integer = 1*DIGIT                                           ; integer spec
+program = assignment / expr                                 ; a program is either an expression or assignment
+assignment = variable "=" expr                              ; assigning an expression to a variable
 expr = term *(("+" / "-") term)                             ; addition or subtraction terms
 term = unary *(("*" / "/") unary)                           ; multiplication or division factors
 unary = [ "-" / "+" ] factor                                ; unary op on factor
 factor = float / integer / variable / "(" expr ")"          ; number, variable or bracketed expression
-assignment = variable "=" expr                              ; assigning an expression to a variable
+float = ( *DIGIT "." 1*DIGIT / 1*DIGIT "." *DIGIT )         ; float spec
+integer = 1*DIGIT                                           ; integer spec
 variable = 1*ALPHA *(ALPHA / DIGIT / "_" )                  ; a variable name (starts with alphabetic character)
-program = assignment / expr                                 ; a program is either an expression or assignment
