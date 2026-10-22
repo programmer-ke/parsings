@@ -1,5 +1,6 @@
 import re
 import abc
+import pprint
 from collections import namedtuple
 from dataclasses import dataclass
 
@@ -61,6 +62,30 @@ class Integer(Node):
 
 
 @dataclass
+class Float(Node):
+    token: Token
+    value: float | None = None
+
+    def analyze(self, world):
+        self.value = float(self.token.value)
+
+    def interpret(self, world):
+        return self.value
+
+
+@dataclass
+class Variable(Node):
+    token: Token
+    name: str | None = None
+
+    def analyze(self, world):
+        self.name = float(self.token.value)
+
+    def interpret(self, world):
+        return world[self.name]
+
+
+@dataclass
 class Addition(Node):
     left: Node
     right: Node
@@ -71,6 +96,67 @@ class Addition(Node):
 
     def interpret(self, world):
         return self.left.interpret(world) + self.right.interpret(world)
+
+
+@dataclass
+class Multiplication(Node):
+    left: Node
+    right: Node
+
+    def analyze(self, world):
+        self.left.analyze(world)
+        self.right.analyze(world)
+
+    def interpret(self, world):
+        return self.left.interpret(world) * self.right.interpret(world)
+
+
+@dataclass
+class Subtraction(Node):
+    left: Node
+    right: Node
+
+    def analyze(self, world):
+        self.left.analyze(world)
+        self.right.analyze(world)
+
+    def interpret(self, world):
+        return self.left.interpret(world) - self.right.interpret(world)
+
+
+@dataclass
+class Division(Node):
+    left: Node
+    right: Node
+
+    def analyze(self, world):
+        self.left.analyze(world)
+        self.right.analyze(world)
+
+    def interpret(self, world):
+        return self.left.interpret(world) / self.right.interpret(world)
+
+
+@dataclass
+class Positive(Node):
+    factor: Node
+
+    def analyze(self, world):
+        self.factor.analyze(world)
+
+    def interpret(self, world):
+        return self.factor.interpret(world)
+
+
+@dataclass
+class Negative(Node):
+    factor: Node
+
+    def analyze(self, world):
+        self.factor.analyze(world)
+
+    def interpret(self, world):
+        return -1 * self.factor.interpret(world)
 
 
 def tokens(text, line_index):
@@ -86,7 +172,7 @@ def tokens(text, line_index):
 
 class Calculator:
     def __init__(self, code):
-        self._current_token, self._next_token = None, None
+        self._current_token, self._next_token, self._third_token = None, None, None
         self._code = code
         self._linecount = 0
         self._tokens = None
@@ -100,19 +186,17 @@ class Calculator:
     def eval(self, line):
         """Evaluate program"""
         self._tokens = tokens(line, self._linecount)
-        self._current_token, self._next_token = None, None
-        self._advance()
+        self._reset_token_queue()
         self._tree = self.program()
-        import pprint
-
-        pprint.pprint(self._tree)
         self._tree.analyze(self._world)
         return self._tree.interpret(self._world)
 
+    def show_tree(self):
+        pprint.pprint(self._tree)
+
     def program(self):
         """program = assignment / expr"""
-        self._advance()
-        if self._next_token and self._next_token.type == "ASSIGN":
+        if self._third_token and self._third_token.type == "ASSIGN":
             return self.assignment()
         return self.expr()
 
@@ -123,31 +207,83 @@ class Calculator:
 
     def expr_rhs(self, left):
         """expr_rhs = *(("+" / "-") term)"""
-        current_type = self._current_token.type if self._current_token else None
-        if current_type not in ["PLUS", "MINUS"]:
-            return left
 
-        self._advance()
-        right = self.term()
-        if current_type == "PLUS":
+        op = None
+        if self._accept("PLUS"):
+            right = self.term()
             op = Addition(left, right)
-        else:
+        elif self._accept("MINUS"):
+            right = self.term()
             op = Subtraction(left, right)
+
+        if op is None:
+            return left
         return self.expr_rhs(op)
 
     def term(self):
-        """term = unary *(("*" / "/") unary)"""
-        term = Integer(self._current_token)
+        """term = unary term_rhs"""
+        left = self.unary()
+        return self.term_rhs(left)
+
+    def term_rhs(self, left):
+        """term_rhs = *(("*" / "/") unary)"""
+
+        op = None
+        if self._accept("MULTIPLY"):
+            right = self.unary()
+            op = Multiplication(left, right)
+        elif self._accept("DIVIDE"):
+            right = self.unary()
+            op = Division(left, right)
+
+        if op is None:
+            return left
+        return self.term_rhs(op)
+
+    def unary(self):
+        """unary = [ "-" / "+" ] factor"""
+
+        if self._accept("PLUS"):
+            result = Positive(self.factor())
+
+        elif self._accept("MINUS"):
+            result = Negative(self.factor())
+
+        else:
+            result = self.factor()
+        return result
+
+    def factor(self):
+        """factor = float / integer / variable / "(" expr ")"""
+
+        if self._accept("FLOAT"):
+            return Float(self._current_token)
+        elif self._accept("INTEGER"):
+            return Integer(self._current_token)
+        elif self._accept("VARIABLE"):
+            return Variable(self._current_token)
+        else:
+            self._expect("LPAREN")
+            expr = self.expr()
+            self._expect("RPAREN")
+            return expr
+
+    def _reset_token_queue(self):
+        """Start token consumption from new stream"""
+        self._current_token, self._next_token, self._third_token = None, None, None
+        # First token should be in _next_token slot
         self._advance()
-        return term
+        self._advance()
 
     def _advance(self):
-        self._current_token, self._next_token = self._next_token, next(
-            self._tokens, None
+        self._current_token, self._next_token, self._third_token = (
+            self._next_token,
+            self._third_token,
+            next(self._tokens, None),
         )
 
     def _accept(self, token_type):
-        if self._next_token.type == token_type:
+        if self._next_token and self._next_token.type == token_type:
             self._advance()
             return True
 

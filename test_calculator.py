@@ -1,12 +1,19 @@
+import pytest
 from calc import Calculator
 
 
-def test_returns_primitive_value():
-    code = ["123", "456"]
-    assert list(Calculator(code).execute()) == [123, 456]
+pairs = (
+    ("123", 123),
+    ("456", 456),
+    ("123 + 456 + 789", 123 + 456 + 789),
+    ("-1", -1),
+    ("2 / -2", 2 / -2),
+    ("(1 + 2) * 3", (1 + 2) * 3),
+)
 
 
-def test_can_calculate():
+@pytest.mark.parametrize("program, expected", pairs)
+def test_can_calculate(program, expected):
     expr = "123 + 456 + 789"
-    [result] = Calculator([expr]).execute()
-    assert result == 123 + 456 + 789
+    [result] = Calculator([program]).execute()
+    assert result == expected
