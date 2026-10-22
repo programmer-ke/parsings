@@ -241,13 +241,13 @@ class Calculator:
         return self.term_rhs(op)
 
     def unary(self):
-        """unary = [ "-" / "+" ] factor"""
+        """unary = ([ "-" / "+" ] unary) / factor"""
 
         if self._accept("PLUS"):
-            result = Positive(self.factor())
+            result = Positive(self.unary())
 
         elif self._accept("MINUS"):
-            result = Negative(self.factor())
+            result = Negative(self.unary())
 
         else:
             result = self.factor()
@@ -289,6 +289,4 @@ class Calculator:
 
     def _expect(self, token_type):
         if not self._accept(token_type):
-            raise SyntaxError(
-                f"Expected token {token_type}, found {self._next_token.type}"
-            )
+            raise SyntaxError(f"Expected token {token_type}, found {self._next_token}")
