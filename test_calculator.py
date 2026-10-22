@@ -51,3 +51,9 @@ error_cases = (
 def test_syntax_errors(expr):
     with pytest.raises(SyntaxError):
         list(Calculator([expr]).execute())
+
+
+def test_assignment():
+    code = ["a = 2", "a", "b = a + 3", "b"]
+    expected = [None, 2, None, 5]
+    assert list(Calculator(code).execute()) == expected

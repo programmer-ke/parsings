@@ -79,7 +79,7 @@ class Variable(Node):
     name: str | None = None
 
     def analyze(self, world):
-        self.name = float(self.token.value)
+        self.name = str(self.token.value)
 
     def interpret(self, world):
         return world[self.name]
@@ -159,6 +159,20 @@ class Negative(Node):
         return -1 * self.factor.interpret(world)
 
 
+@dataclass
+class Assignment(Node):
+    variable: Node
+    expr: Node
+
+    def analyze(self, world):
+        self.variable.analyze(world)
+        self.expr.analyze(world)
+
+    def interpret(self, world):
+        name, value = self.variable.name, self.expr.interpret(world)
+        world[name] = value
+
+
 def tokens(text, line_index):
     """Generates tokens on demand"""
     for m in master_pattern.finditer(text):
@@ -199,6 +213,15 @@ class Calculator:
         if self._third_token and self._third_token.type == "ASSIGN":
             return self.assignment()
         return self.expr()
+
+    def assignment(self):
+        """assignment = variable "=" expr"""
+
+        self._expect("VARIABLE")
+        variable = Variable(self._current_token)
+        self._expect("ASSIGN")
+        expr = self.expr()
+        return Assignment(variable, expr)
 
     def expr(self):
         """expr = term expr_rhs"""
