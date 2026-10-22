@@ -5,7 +5,7 @@ from collections import namedtuple
 from dataclasses import dataclass
 
 ASSIGN = r"(?P<ASSIGN>=)"
-VARIABLE = r"(?P<VARIABLE>[a-zA-Z]+\w*)"
+VARIABLE = r"(?P<VARIABLE>\b[a-zA-Z]+\w*)"
 FLOAT = r"(?P<FLOAT>\d+\.\d*|\d*\.\d+)"
 INTEGER = r"(?P<INTEGER>\d+)"
 WHITESPACE = r"(?P<WHITESPACE>\s+)"
@@ -202,6 +202,11 @@ class Calculator:
         self._tokens = tokens(line, self._linecount)
         self._reset_token_queue()
         self._tree = self.program()
+
+        # should have consumed all tokens so far
+        if self._next_token is not None:
+            raise SyntaxError(f"Unexpected token {self._next_token}")
+
         self._tree.analyze(self._world)
         return self._tree.interpret(self._world)
 
