@@ -1,0 +1,11 @@
+program = assignment / expr                                 ; a program is either an expression or assignment
+assignment = variable "=" expr                              ; assigning an expression to a variable
+expr = term expr_rhs                                        ; a left term and an expr right hand side
+expr_rhs = *(("+" / "-") term)                              ; zero or more rhs terms for + and -
+term = unary term_rhs                                       ; a left unary and term right hand side
+term_rhs = *(("*" / "/") unary)                             ; zero or more rhs unaries for / and *
+unary = ([ "-" / "+" ] unary) / factor                      ; unary op or factor
+factor = float / integer / variable / "(" expr ")"          ; number, variable or bracketed expression
+float = ( *DIGIT "." 1*DIGIT / 1*DIGIT "." *DIGIT )         ; float spec
+integer = 1*DIGIT                                           ; integer spec
+variable = 1*ALPHA *(ALPHA / DIGIT / "_" )                  ; a variable name (starts with alphabetic character)
